@@ -1,0 +1,204 @@
+<html>
+  <head>
+    <title>Conway's Game of Life</title>
+  </head>
+  <body bgcolor=#003366>
+    <font size="6" color="white">Conway's Game of Life</font>
+    <br>
+	<font color="white">Instructions: Use your mouse button to draw on the grid, and then hit play to see what happens!</font>
+	<br>
+	<a color="white" href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Learn more</a>
+	<br>
+    <canvas id="canvas"></canvas>
+	<br>
+	<button id="pause" type="button" class="coolButton">Play</button>
+	<button id="clear" type="button" class="coolButton">Clear</button>
+  </body>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+  <script>
+  
+	var canvas = $("#canvas");
+	var clearButton = $("#clear");
+	var pauseButton = $("#pause");
+	var speed = $("#speed");
+  
+	var canvasWidth = 1000;
+	var canvasHeight = 600;
+	canvas.prop("height", canvasHeight);
+	canvas.prop("width", canvasWidth);
+	var ctx=canvas[0].getContext("2d");
+	ctx.fillStyle = "white";
+	ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+	var cellSize = 10;
+	var rows = Math.ceil(canvasHeight / cellSize);
+	var columns = Math.ceil(canvasWidth / cellSize);
+	var grid = new Array(rows);
+	var timer;
+	var interval = 100;
+	var paused = true;
+	
+	initialize(Math.ceil(canvasHeight / cellSize), Math.ceil(canvasWidth / cellSize));
+	
+	var drawing = false;
+	canvas.on("mousedown", function() {
+		drawing = true;
+		clickX = event.pageX - canvas[0].offsetLeft;
+		clickY = event.pageY - canvas[0].offsetTop;
+		alivenCell(Math.floor(clickY / cellSize), Math.floor(clickX / cellSize));
+	});
+	
+	function alivenCell(r,c) {
+			grid[r][c].alive = true;
+			ctx.fillStyle = "black";
+			ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+	}
+	
+	canvas.on("mousemove", function(event) {
+		if (drawing) {
+			clickX = event.pageX - canvas[0].offsetLeft;
+			clickY = event.pageY - canvas[0].offsetTop;
+			alivenCell(Math.floor(clickY / cellSize), Math.floor(clickX / cellSize));
+		}
+	});
+	
+	canvas.on("mouseup", function(event) {
+		drawing = false;
+	});
+	
+	pauseButton.on("click", function() {
+		paused = !paused;
+		if (paused) {
+			clearInterval(timer);
+			pauseButton.html("Play");
+		} else {
+			timer = setInterval(tick, interval);
+			pauseButton.html("Pause");
+		}
+		updateAndDraw();
+	});
+	
+	clearButton.on("click", function() {
+		initialize(rows, columns);
+	});
+	
+	function initialize(rows, columns) {
+		for (var i = 0; i < rows; i++) {
+			var temp = new Array(columns);
+			for (var j = 0; j < columns; j++) {
+				temp[j] = {
+					alive: false,
+					change: 0
+					// 0 is no change, 1 is becoming alive, -1 is becoming dead.
+				};
+			}
+			grid[i] = temp;
+	    }
+		updateAndDraw();
+	}
+	
+	function updateAndDraw () {
+		for (var i = 0; i < rows; i++) {
+			for (var j = 0; j < columns; j++) {
+				if (grid[i][j].change === 1) {
+					grid[i][j].alive = true;
+					grid[i][j].change = 0;
+				} else if (grid[i][j].change === -1) {
+					grid[i][j].alive = false;
+					grid[i][j].change = 0;
+				}
+				
+				if (grid[i][j].alive) {
+					ctx.fillStyle = "black";
+				} else {
+					ctx.fillStyle = "white";
+				}
+				ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+			}
+	    }
+	}
+	
+	function applyRules() {
+		for (var i = 0; i < rows; i++) {
+			for (var j = 0; j < columns; j++) {
+				liveNeighbors = countLiveNeighbors(i, j);
+				if (grid[i][j].alive && (liveNeighbors < 2 || liveNeighbors > 3)) {
+					grid[i][j].change = -1;
+				} else if (liveNeighbors === 3){
+					grid[i][j].change = 1;
+				}
+			}
+	    }
+	}
+	
+	function countLiveNeighbors(r, c) {
+		var count = 0;
+		var coords = [r-1, c-1, r-1, c, r-1, c+1, r, c-1, r, c+1, r+1, c-1, r+1, c, r+1, c+1];
+		for (var i = 0; i < 16; i += 2) {
+			if (grid[coords[i]] === undefined) continue;
+			var cell = grid[coords[i]][coords[i + 1]];
+			if (cell !== undefined && cell.alive === true) {
+				count++;
+			}
+		}
+		return count;
+	}
+	
+	function tick() {
+		applyRules();
+		updateAndDraw();
+	}
+  </script>
+  <style>
+  
+	body {
+    text-align: center;
+	}
+	
+	a:link    {color:white; background-color:transparent; text-decoration:underline}
+	a:visited {color:white; background-color:transparent; text-decoration:underline}
+	
+	p {
+	  padding-top: 5px;
+	}
+	
+	.coolButton {
+	-moz-box-shadow: 0px 0px 0px 2px #000000;
+	-webkit-box-shadow: 0px 0px 0px 2px #000000;
+	box-shadow: 0px 0px 0px 2px #000000;
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #808080), color-stop(1, #000000));
+	background:-moz-linear-gradient(top, #808080 5%, #000000 100%);
+	background:-webkit-linear-gradient(top, #808080 5%, #000000 100%);
+	background:-o-linear-gradient(top, #808080 5%, #000000 100%);
+	background:-ms-linear-gradient(top, #808080 5%, #000000 100%);
+	background:linear-gradient(to bottom, #808080 5%, #000000 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#808080', endColorstr='#000000',GradientType=0);
+	background-color:#808080;
+	-moz-border-radius:10px;
+	-webkit-border-radius:10px;
+	border-radius:10px;
+	border:1px solid #000000;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Arial;
+	font-size:19px;
+	padding:12px 37px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #000000;
+}
+.coolButton:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #000000), color-stop(1, #808080));
+	background:-moz-linear-gradient(top, #000000 5%, #808080 100%);
+	background:-webkit-linear-gradient(top, #000000 5%, #808080 100%);
+	background:-o-linear-gradient(top, #000000 5%, #808080 100%);
+	background:-ms-linear-gradient(top, #000000 5%, #808080 100%);
+	background:linear-gradient(to bottom, #000000 5%, #808080 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#000000', endColorstr='#808080',GradientType=0);
+	background-color:#000000;
+}
+.coolButton:active {
+	position:relative;
+	top:1px;
+}
+  </style>
+</html>
