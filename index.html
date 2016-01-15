@@ -2,25 +2,27 @@
   <head>
     <title>Conway's Game of Life</title>
   </head>
-  <body bgcolor=#003366>
-    <font size="6" color="white">Conway's Game of Life</font>
-    <br>
-	<font color="white">Instructions: Use your mouse button to draw on the grid, and then hit play to see what happens!</font>
-	<br>
+  <body bgcolor="black"> <!-- #003366-->
+    <p><b>Conway's Game of Life</b></p>
+	<p>Instructions: Use your mouse button to draw on the grid, and then hit play to see what happens!</p>
 	<a color="white" href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Learn more</a>
+    <br><br>
+	<canvas id="canvas"></canvas>
 	<br><br>
-    <canvas id="canvas"></canvas>
-	<br><br>
-	<button id="pause" type="button" class="coolButton">Play</button>
+	<div style="display:inline-block;"><button id="pause" type="button" class="coolButton">Play</button>
 	<button id="clear" type="button" class="coolButton">Clear</button>
+	<button id="showGrid" type="button" class="coolButton">Show Grid</button></div>
+	<div style="display:inline-block; padding-left:100px;"><img src="white-speed-256.png" alt="Game Speed">
+	<input id="speedSlider" type="range" min="1" max="25" value="4"> <p id="showSpeed"></p></div>
   </body>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
   <script>
-  
 	var canvas = $("#canvas");
 	var clearButton = $("#clear");
 	var pauseButton = $("#pause");
-	var speed = $("#speed");
+	var speedSlider = $("#speedSlider");
+	var showSpeed = $("#showSpeed");
+	var showGridButton = $("#showGrid");
   
 	var canvasWidth = 1000;
 	var canvasHeight = 600;
@@ -34,8 +36,11 @@
 	var columns = Math.ceil(canvasWidth / cellSize);
 	var grid = new Array(rows);
 	var timer;
-	var interval = 100;
+	var interval = 1000 / speedSlider.val();
+	showSpeed.prop("html", interval + "ms");
+	console.log(interval);
 	var paused = true;
+	var drawingGridLines = false;
 	
 	initialize(Math.ceil(canvasHeight / cellSize), Math.ceil(canvasWidth / cellSize));
 	
@@ -50,7 +55,11 @@
 	function alivenCell(r,c) {
 			grid[r][c].alive = true;
 			ctx.fillStyle = "black";
-			ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+			if (drawingGridLines) {
+					ctx.fillRect(c * cellSize, r * cellSize, cellSize - 1, cellSize - 1);
+				} else {
+					ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+				}
 	}
 	
 	canvas.on("mousemove", function(event) {
@@ -79,6 +88,31 @@
 	
 	clearButton.on("click", function() {
 		initialize(rows, columns);
+	});
+	
+	showGridButton.on("click", function() {
+		drawingGridLines = !drawingGridLines;
+		if (drawingGridLines) {
+			ctx.fillStyle = "white";
+			ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+			drawGridLines();
+			updateAndDraw();
+			showGridButton.html("Hide Grid");
+		} else {
+			ctx.fillStyle = "white";
+			ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+			updateAndDraw();
+			showGridButton.html("Show Grid");
+		}
+	});
+	
+	speedSlider.on("change", function() {
+		interval = 1000 / speedSlider.val();
+		showSpeed.prop("html", interval + "ms");
+		if (!paused) {
+			clearInterval(timer);
+			timer = setInterval(tick, interval);
+		}
 	});
 	
 	function initialize(rows, columns) {
@@ -112,9 +146,28 @@
 				} else {
 					ctx.fillStyle = "white";
 				}
-				ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+				if (drawingGridLines) {
+					ctx.fillRect(j * cellSize, i * cellSize, cellSize - 1, cellSize - 1);
+				} else {
+					ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+				}
 			}
 	    }
+	}
+	
+	function drawGridLines() {
+		ctx.beginPath();
+		for (var i = 0; i < rows; i++) {
+			ctx.moveTo(0, i *cellSize);
+			ctx.lineTo(canvasWidth, i * cellSize);
+			for (var j = 0; j < columns; j++) {
+				ctx.moveTo(j * cellSize, 0);
+				ctx.lineTo(j * cellSize, canvasHeight);
+			}
+	    }
+		ctx.lineWidth=1;
+		ctx.strokeStyle = "gray";
+		ctx.stroke();
 	}
 	
 	function applyRules() {
@@ -151,32 +204,35 @@
   <style>
   
 	body {
-    text-align: center;
+	color: white;
+	font-size: 150%;
 	}
 	
-	a:link    {color:white; background-color:transparent; text-decoration:underline}
-	a:visited {color:white; background-color:transparent; text-decoration:underline}
-	
-	font {
-	  padding-top: 5px;
+	a:link    {
+	color:white; 
+	background-color:transparent; 
+	text-decoration:underline
 	}
 	
-	button {
-		padding: 10px;
+	a:visited {
+	color:white; 
+	background-color:transparent; 
+	text-decoration:underline
 	}
 	
+	/*credit to http://www.bestcssbuttongenerator.com/*/
 	.coolButton {
 	-moz-box-shadow: 0px 0px 0px 2px #000000;
 	-webkit-box-shadow: 0px 0px 0px 2px #000000;
 	box-shadow: 0px 0px 0px 2px #000000;
-	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #808080), color-stop(1, #000000));
-	background:-moz-linear-gradient(top, #808080 5%, #000000 100%);
-	background:-webkit-linear-gradient(top, #808080 5%, #000000 100%);
-	background:-o-linear-gradient(top, #808080 5%, #000000 100%);
-	background:-ms-linear-gradient(top, #808080 5%, #000000 100%);
-	background:linear-gradient(to bottom, #808080 5%, #000000 100%);
-	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#808080', endColorstr='#000000',GradientType=0);
-	background-color:#808080;
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #858585), color-stop(1, #292929));
+	background:-moz-linear-gradient(top, #858585 5%, #292929 100%);
+	background:-webkit-linear-gradient(top, #858585 5%, #292929 100%);
+	background:-o-linear-gradient(top, #858585 5%, #292929 100%);
+	background:-ms-linear-gradient(top, #858585 5%, #292929 100%);
+	background:linear-gradient(to bottom, #858585 5%, #292929 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#858585', endColorstr='#292929',GradientType=0);
+	background-color:#858585;
 	-moz-border-radius:10px;
 	-webkit-border-radius:10px;
 	border-radius:10px;
@@ -189,20 +245,20 @@
 	padding:12px 37px;
 	text-decoration:none;
 	text-shadow:0px 1px 0px #000000;
-}
-.coolButton:hover {
-	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #000000), color-stop(1, #808080));
-	background:-moz-linear-gradient(top, #000000 5%, #808080 100%);
-	background:-webkit-linear-gradient(top, #000000 5%, #808080 100%);
-	background:-o-linear-gradient(top, #000000 5%, #808080 100%);
-	background:-ms-linear-gradient(top, #000000 5%, #808080 100%);
-	background:linear-gradient(to bottom, #000000 5%, #808080 100%);
-	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#000000', endColorstr='#808080',GradientType=0);
-	background-color:#000000;
-}
-.coolButton:active {
+	}
+	.coolButton:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #292929), color-stop(1, #858585));
+	background:-moz-linear-gradient(top, #292929 5%, #858585 100%);
+	background:-webkit-linear-gradient(top, #292929 5%, #858585 100%);
+	background:-o-linear-gradient(top, #292929 5%, #858585 100%);
+	background:-ms-linear-gradient(top, #292929 5%, #858585 100%);
+	background:linear-gradient(to bottom, #292929 5%, #858585 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#292929', endColorstr='#858585',GradientType=0);
+	background-color:#292929;
+	}
+	.coolButton:active {
 	position:relative;
 	top:1px;
-}
+	}
   </style>
 </html>
