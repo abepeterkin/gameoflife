@@ -4,12 +4,15 @@
   </head>
   <body bgcolor="black"> <!-- #003366-->
     <p><b>Conway's Game of Life</b></p>
-	<p>Instructions: Use your mouse button to draw on the grid, and then hit play to see what happens!</p>
-	<a color="white" href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Learn more</a>
-    <br><br>
+	<p>Instructions: Use the mouse to draw on the grid, and then hit play to start the simulation.
+	You can pause, adjust the speed, or draw while the game is running.</p>
+	<p>Conway's Game of Life is a "cellular automaton", a simulation that evolves using a simple set of rules. 
+	<a color="white" href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life" target="_blank">Read about it on Wikipedia.</a></p>
+    
 	<canvas id="canvas"></canvas>
 	<br><br>
 	<div style="display:inline-block;"><button id="pause" type="button" class="coolButton">Play</button>
+	<button id="step" type="button" class="coolButton">Next</button>
 	<button id="clear" type="button" class="coolButton">Clear</button>
 	<button id="showGrid" type="button" class="coolButton">Show Grid</button></div>
 	<div style="display:inline-block; padding-left:100px;"><img src="white-speed-256.png" alt="Game Speed">
@@ -20,6 +23,7 @@
 	var canvas = $("#canvas");
 	var clearButton = $("#clear");
 	var pauseButton = $("#pause");
+	var stepButton = $("#step");
 	var speedSlider = $("#speedSlider");
 	var showSpeed = $("#showSpeed");
 	var showGridButton = $("#showGrid");
@@ -88,6 +92,10 @@
 	
 	clearButton.on("click", function() {
 		initialize(rows, columns);
+	});
+	
+	stepButton.on("click", function() {
+		tick();
 	});
 	
 	showGridButton.on("click", function() {
