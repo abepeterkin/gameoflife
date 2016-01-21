@@ -2,272 +2,287 @@
   <head>
     <title>Conway's Game of Life</title>
   </head>
-  <body bgcolor="black"> <!-- #003366-->
+  <body bgcolor="black">
     <p><b>Conway's Game of Life</b></p>
-	<p>Instructions: Use the mouse to draw on the grid, and then hit play to start the simulation.
-	You can pause, adjust the speed, or draw while the game is running.</p>
-	<p>Conway's Game of Life is a "cellular automaton", a simulation that evolves using a simple set of rules. 
-	<a color="white" href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life" target="_blank">Read about it on Wikipedia.</a></p>
-    
-	<canvas id="canvas"></canvas>
-	<br><br>
-	<div style="display:inline-block;"><button id="pause" type="button" class="coolButton">Play</button>
-	<button id="step" type="button" class="coolButton">Next</button>
-	<button id="clear" type="button" class="coolButton">Clear</button>
-	<button id="showGrid" type="button" class="coolButton">Show Grid</button></div>
-	<div style="display:inline-block; padding-left:100px;"><img src="white-speed-256.png" alt="Game Speed">
-	<input id="speedSlider" type="range" min="1" max="25" value="4"> <p id="showSpeed"></p></div>
-	<br><br> Abe Peterkin - 2016
+  <p>Instructions: Use the mouse to draw on the grid, and then hit play to start the simulation.
+  You can pause, adjust the speed, or draw while the game is running.</p>
+  <p>Conway's Game of Life is a "cellular automaton", a simulation that evolves using a simple set of rules. 
+  <a color="white" href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life" target="_blank">Read about it on Wikipedia.</a></p>
+  <canvas id="canvas"></canvas>
+  <br><br>
+  <div style="display:inline-block;"><button id="pause" type="button" class="coolButton">Play</button>
+  <button id="step" type="button" class="coolButton">Next</button>
+  <button id="clear" type="button" class="coolButton">Clear</button>
+  <button id="showGrid" type="button" class="coolButton">Show Grid</button></div>
+  <div style="display:inline-block; padding-left:100px;"><img src="white-speed-256.png" alt="Game Speed">
+  <input id="speedSlider" type="range" min="1" max="25" value="4"> <p id="showSpeed"></p></div>
+  <br><br> Abe Peterkin - 2016
   </body>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
   <script>
-	var canvas = $("#canvas");
-	var clearButton = $("#clear");
-	var pauseButton = $("#pause");
-	var stepButton = $("#step");
-	var speedSlider = $("#speedSlider");
-	var showSpeed = $("#showSpeed");
-	var showGridButton = $("#showGrid");
+  var canvas = $("#canvas");
+  var clearButton = $("#clear");
+  var pauseButton = $("#pause");
+  var stepButton = $("#step");
+  var speedSlider = $("#speedSlider");
+  var showSpeed = $("#showSpeed");
+  var showGridButton = $("#showGrid");
   
-	var canvasWidth = 1000;
-	var canvasHeight = 600;
-	canvas.prop("height", canvasHeight);
-	canvas.prop("width", canvasWidth);
-	var ctx=canvas[0].getContext("2d");
-	ctx.fillStyle = "white";
-	ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-	var cellSize = 10;
-	var rows = Math.ceil(canvasHeight / cellSize);
-	var columns = Math.ceil(canvasWidth / cellSize);
-	var grid = new Array(rows);
-	var timer;
-	var interval = 1000 / speedSlider.val();
-	showSpeed.prop("html", interval + "ms");
-	console.log(interval);
-	var paused = true;
-	var drawingGridLines = false;
-	
-	initialize(Math.ceil(canvasHeight / cellSize), Math.ceil(canvasWidth / cellSize));
-	
-	var drawing = false;
-	canvas.on("mousedown", function() {
-		drawing = true;
-		clickX = event.pageX - canvas[0].offsetLeft;
-		clickY = event.pageY - canvas[0].offsetTop;
-		alivenCell(Math.floor(clickY / cellSize), Math.floor(clickX / cellSize));
-	});
-	
-	function alivenCell(r,c) {
-			grid[r][c].alive = true;
-			ctx.fillStyle = "black";
-			if (drawingGridLines) {
-					ctx.fillRect(c * cellSize, r * cellSize, cellSize - 1, cellSize - 1);
-				} else {
-					ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
-				}
-	}
-	
-	canvas.on("mousemove", function(event) {
-		if (drawing) {
-			clickX = event.pageX - canvas[0].offsetLeft;
-			clickY = event.pageY - canvas[0].offsetTop;
-			alivenCell(Math.floor(clickY / cellSize), Math.floor(clickX / cellSize));
-		}
-	});
-	
-	canvas.on("mouseup", function(event) {
-		drawing = false;
-	});
-	
-	pauseButton.on("click", function() {
-		paused = !paused;
-		if (paused) {
-			clearInterval(timer);
-			pauseButton.html("Play");
-		} else {
-			timer = setInterval(tick, interval);
-			pauseButton.html("Pause");
-		}
-		updateAndDraw();
-	});
-	
-	clearButton.on("click", function() {
-		initialize(rows, columns);
-	});
-	
-	stepButton.on("click", function() {
-		tick();
-	});
-	
-	showGridButton.on("click", function() {
-		drawingGridLines = !drawingGridLines;
-		if (drawingGridLines) {
-			ctx.fillStyle = "white";
-			ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-			drawGridLines();
-			updateAndDraw();
-			showGridButton.html("Hide Grid");
-		} else {
-			ctx.fillStyle = "white";
-			ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-			updateAndDraw();
-			showGridButton.html("Show Grid");
-		}
-	});
-	
-	speedSlider.on("change", function() {
-		interval = 1000 / speedSlider.val();
-		showSpeed.prop("html", interval + "ms");
-		if (!paused) {
-			clearInterval(timer);
-			timer = setInterval(tick, interval);
-		}
-	});
-	
-	function initialize(rows, columns) {
-		for (var i = 0; i < rows; i++) {
-			var temp = new Array(columns);
-			for (var j = 0; j < columns; j++) {
-				temp[j] = {
-					alive: false,
-					change: 0
-					// 0 is no change, 1 is becoming alive, -1 is becoming dead.
-				};
-			}
-			grid[i] = temp;
-	    }
-		updateAndDraw();
-	}
-	
-	function updateAndDraw () {
-		for (var i = 0; i < rows; i++) {
-			for (var j = 0; j < columns; j++) {
-				if (grid[i][j].change === 1) {
-					grid[i][j].alive = true;
-					grid[i][j].change = 0;
-				} else if (grid[i][j].change === -1) {
-					grid[i][j].alive = false;
-					grid[i][j].change = 0;
-				}
-				
-				if (grid[i][j].alive) {
-					ctx.fillStyle = "black";
-				} else {
-					ctx.fillStyle = "white";
-				}
-				if (drawingGridLines) {
-					ctx.fillRect(j * cellSize, i * cellSize, cellSize - 1, cellSize - 1);
-				} else {
-					ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
-				}
-			}
-	    }
-	}
-	
-	function drawGridLines() {
-		ctx.beginPath();
-		for (var i = 0; i < rows; i++) {
-			ctx.moveTo(0, i *cellSize);
-			ctx.lineTo(canvasWidth, i * cellSize);
-			for (var j = 0; j < columns; j++) {
-				ctx.moveTo(j * cellSize, 0);
-				ctx.lineTo(j * cellSize, canvasHeight);
-			}
-	    }
-		ctx.lineWidth=1;
-		ctx.strokeStyle = "gray";
-		ctx.stroke();
-	}
-	
-	function applyRules() {
-		for (var i = 0; i < rows; i++) {
-			for (var j = 0; j < columns; j++) {
-				liveNeighbors = countLiveNeighbors(i, j);
-				if (grid[i][j].alive && (liveNeighbors < 2 || liveNeighbors > 3)) {
-					grid[i][j].change = -1;
-				} else if (liveNeighbors === 3){
-					grid[i][j].change = 1;
-				}
-			}
-	    }
-	}
-	
-	function countLiveNeighbors(r, c) {
-		var count = 0;
-		var coords = [r-1, c-1, r-1, c, r-1, c+1, r, c-1, r, c+1, r+1, c-1, r+1, c, r+1, c+1];
-		for (var i = 0; i < 16; i += 2) {
-			if (grid[coords[i]] === undefined) continue;
-			var cell = grid[coords[i]][coords[i + 1]];
-			if (cell !== undefined && cell.alive === true) {
-				count++;
-			}
-		}
-		return count;
-	}
-	
-	function tick() {
-		applyRules();
-		updateAndDraw();
-	}
+  var canvasWidth = 1000;
+  var canvasHeight = 600;
+  canvas.prop("height", canvasHeight);
+  canvas.prop("width", canvasWidth);
+  var ctx=canvas[0].getContext("2d");
+  var cellSize = 10;
+  var rows = Math.ceil(canvasHeight / cellSize);
+  var columns = Math.ceil(canvasWidth / cellSize);
+  var grid = new Array(rows);
+  var timer;
+  var interval = 1000 / speedSlider.val();
+  showSpeed.prop("html", interval + "ms");
+  var paused = true;
+  var drawingGridLines = false;
+  var drawing = false;
+  
+  initialize(Math.ceil(canvasHeight / cellSize), Math.ceil(canvasWidth / cellSize));
+  
+  /************************* EVENT HANDLERS **********************************/
+  
+  // Handlers for drawing cells onto the canvas
+  canvas.on("mousedown", function() {
+    drawing = true;
+    clickX = event.pageX - canvas[0].offsetLeft;
+    clickY = event.pageY - canvas[0].offsetTop;
+    alivenCell(Math.floor(clickY / cellSize), Math.floor(clickX / cellSize));
+  });
+  canvas.on("mousemove", function(event) {
+    if (drawing) {
+      clickX = event.pageX - canvas[0].offsetLeft;
+      clickY = event.pageY - canvas[0].offsetTop;
+      alivenCell(Math.floor(clickY / cellSize), Math.floor(clickX / cellSize));
+    }
+  });
+  canvas.on("mouseup", function(event) {
+    drawing = false;
+  });
+  
+  // Handler for the 'pause' button
+  pauseButton.on("click", function() {
+    paused = !paused;
+    if (paused) {
+      clearInterval(timer);
+      pauseButton.html("Play");
+    } else {
+      timer = setInterval(tick, interval);
+      pauseButton.html("Pause");
+    }
+    updateAndDraw();
+  });
+  
+  // Handler for the 'clear' button
+  clearButton.on("click", function() {
+    initialize(rows, columns);
+  });
+  
+  // Handler for the 'step' button
+  stepButton.on("click", function() {
+    tick();
+  });
+  
+  // Handler for the 'show grid' button
+  showGridButton.on("click", function() {
+    drawingGridLines = !drawingGridLines;
+    if (drawingGridLines) {
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      drawGridLines();
+      updateAndDraw();
+      showGridButton.html("Hide Grid");
+    } else {
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      updateAndDraw();
+      showGridButton.html("Show Grid");
+    }
+  });
+  
+  // Handler for the 'speed' slider
+  speedSlider.on("change", function() {
+    interval = 1000 / speedSlider.val();
+    showSpeed.prop("html", interval + "ms");
+    if (!paused) {
+      clearInterval(timer);
+      timer = setInterval(tick, interval);
+    }
+  });
+  
+  /************************* FUNCTIONS ***************************************/
+  
+  // Switches a cell from dead to alive, and draws a black square over it.
+  function alivenCell(r,c) {
+    grid[r][c].alive = true;
+    ctx.fillStyle = "black";
+    if (drawingGridLines) {
+      ctx.fillRect(c * cellSize, r * cellSize, cellSize - 1, cellSize - 1);
+    } else {
+      ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+    }
+  }
+  
+  /* Initializes the array of cells.
+   * */
+  function initialize(rows, columns) {
+    for (var i = 0; i < rows; i++) {
+      var temp = new Array(columns);
+      for (var j = 0; j < columns; j++) {
+        temp[j] = {
+          alive: false,
+          change: 0
+          // 0 is no change, 1 is becoming alive, -1 is becoming dead.
+        }
+      }
+      grid[i] = temp;
+    }
+    updateAndDraw();
+  }
+  
+  /* Updates the current state of the cells (based on the future state
+   * that's stored in the cells) and draws the living cells on the board. */
+  function updateAndDraw () {
+    for (var i = 0; i < rows; i++) {
+      for (var j = 0; j < columns; j++) {
+        if (grid[i][j].change === 1) {
+          grid[i][j].alive = true;
+          grid[i][j].change = 0;
+        } else if (grid[i][j].change === -1) {
+          grid[i][j].alive = false;
+          grid[i][j].change = 0;
+        } 
+        
+        if (grid[i][j].alive) {
+          ctx.fillStyle = "black";
+        } else {
+          ctx.fillStyle = "white";
+        }
+        if (drawingGridLines) {
+          ctx.fillRect(j * cellSize, i * cellSize, cellSize - 1, cellSize - 1);
+        } else {
+          ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+  }
+  
+  // Draws lines on the grid that seperate the rows and columns.
+  function drawGridLines() {
+    ctx.beginPath();
+    for (var i = 0; i < rows; i++) {
+      ctx.moveTo(0, i *cellSize);
+      ctx.lineTo(canvasWidth, i * cellSize);
+      for (var j = 0; j < columns; j++) {
+        ctx.moveTo(j * cellSize, 0);
+        ctx.lineTo(j * cellSize, canvasHeight);
+      }
+    }
+    ctx.lineWidth=1;
+    ctx.strokeStyle = "gray";
+    ctx.stroke();
+  }
+  
+  // Calculates what the state of the cells will be on the next step
+  function applyRules() {
+    for (var i = 0; i < rows; i++) {
+      for (var j = 0; j < columns; j++) {
+        liveNeighbors = countLiveNeighbors(i, j);
+        if (grid[i][j].alive && (liveNeighbors < 2 || liveNeighbors > 3)) {
+          grid[i][j].change = -1;
+        } else if (liveNeighbors === 3){
+          grid[i][j].change = 1;
+        }
+      }
+    }
+  }
+  
+  /* Takes the row and column coordinates of a cell
+   * and returns the number of living neighbors that cell has */
+  function countLiveNeighbors(r, c) {
+    var count = 0;
+	/* Instead of using eight if statements, 
+	 * I use this array containing the eight coordinates that surround the cell. */
+    var coords = [r-1, c-1, r-1, c, r-1, c+1, r, c-1, r, c+1, r+1, c-1, r+1, c, r+1, c+1];
+    for (var i = 0; i < 16; i += 2) {
+      if (grid[coords[i]] === undefined) continue;
+      var cell = grid[coords[i]][coords[i + 1]];
+      if (cell !== undefined && cell.alive === true) {
+        count++;
+      }
+    }
+    return count;
+  }
+  
+  // Applies the game rules and redraws the board.
+  function tick() {
+    applyRules();
+    updateAndDraw();
+  }
   </script>
   <style>
+  body {
+    color: white;
+    font-size: 150%;
+  }
   
-	body {
-	color: white;
-	font-size: 150%;
-	}
-	
-	a:link    {
-	color:white; 
-	background-color:transparent; 
-	text-decoration:underline
-	}
-	
-	a:visited {
-	color:white; 
-	background-color:transparent; 
-	text-decoration:underline
-	}
-	
-	/*credit to http://www.bestcssbuttongenerator.com/*/
-	.coolButton {
-	-moz-box-shadow: 0px 0px 0px 2px #000000;
-	-webkit-box-shadow: 0px 0px 0px 2px #000000;
-	box-shadow: 0px 0px 0px 2px #000000;
-	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #858585), color-stop(1, #292929));
-	background:-moz-linear-gradient(top, #858585 5%, #292929 100%);
-	background:-webkit-linear-gradient(top, #858585 5%, #292929 100%);
-	background:-o-linear-gradient(top, #858585 5%, #292929 100%);
-	background:-ms-linear-gradient(top, #858585 5%, #292929 100%);
-	background:linear-gradient(to bottom, #858585 5%, #292929 100%);
-	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#858585', endColorstr='#292929',GradientType=0);
-	background-color:#858585;
-	-moz-border-radius:10px;
-	-webkit-border-radius:10px;
-	border-radius:10px;
-	border:1px solid #000000;
-	display:inline-block;
-	cursor:pointer;
-	color:#ffffff;
-	font-family:Arial;
-	font-size:19px;
-	padding:12px 37px;
-	text-decoration:none;
-	text-shadow:0px 1px 0px #000000;
-	}
-	.coolButton:hover {
-	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #292929), color-stop(1, #858585));
-	background:-moz-linear-gradient(top, #292929 5%, #858585 100%);
-	background:-webkit-linear-gradient(top, #292929 5%, #858585 100%);
-	background:-o-linear-gradient(top, #292929 5%, #858585 100%);
-	background:-ms-linear-gradient(top, #292929 5%, #858585 100%);
-	background:linear-gradient(to bottom, #292929 5%, #858585 100%);
-	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#292929', endColorstr='#858585',GradientType=0);
-	background-color:#292929;
-	}
-	.coolButton:active {
-	position:relative;
-	top:1px;
-	}
+  a:link    {
+    color:white; 
+    background-color:transparent; 
+    text-decoration:underline
+  }
+  
+  a:visited {
+    color:white; 
+    background-color:transparent; 
+    text-decoration:underline
+  }
+  
+  /*credit to http://www.bestcssbuttongenerator.com/*/
+  .coolButton {
+    -moz-box-shadow: 0px 0px 0px 2px #000000;
+    -webkit-box-shadow: 0px 0px 0px 2px #000000;
+    box-shadow: 0px 0px 0px 2px #000000;
+    background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #858585), color-stop(1, #292929));
+    background:-moz-linear-gradient(top, #858585 5%, #292929 100%);
+    background:-webkit-linear-gradient(top, #858585 5%, #292929 100%);
+    background:-o-linear-gradient(top, #858585 5%, #292929 100%);
+    background:-ms-linear-gradient(top, #858585 5%, #292929 100%);
+    background:linear-gradient(to bottom, #858585 5%, #292929 100%);
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#858585', endColorstr='#292929',GradientType=0);
+    background-color:#858585;
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    border-radius:10px;
+    border:1px solid #000000;
+    display:inline-block;
+    cursor:pointer;
+    color:#ffffff;
+    font-family:Arial;
+    font-size:19px;
+    padding:12px 37px;
+    text-decoration:none;
+    text-shadow:0px 1px 0px #000000;
+  }
+  .coolButton:hover {
+    background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #292929), color-stop(1, #858585));
+    background:-moz-linear-gradient(top, #292929 5%, #858585 100%);
+    background:-webkit-linear-gradient(top, #292929 5%, #858585 100%);
+    background:-o-linear-gradient(top, #292929 5%, #858585 100%);
+    background:-ms-linear-gradient(top, #292929 5%, #858585 100%);
+    background:linear-gradient(to bottom, #292929 5%, #858585 100%);
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#292929', endColorstr='#858585',GradientType=0);
+    background-color:#292929;
+  }
+  .coolButton:active {
+    position:relative;
+    top:1px;
+  }
   </style>
 </html>
