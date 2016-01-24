@@ -7,39 +7,44 @@
   <p>Instructions: Use the mouse to draw on the grid, and then hit play to start the simulation.
   You can pause, adjust the speed, or draw while the game is running.</p>
   <p>Conway's Game of Life is a "cellular automaton", a simulation that evolves using a simple set of rules. 
-  <a color="white" href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life" target="_blank">Read about it on Wikipedia.</a></p>
-  <canvas id="canvas"></canvas>
+  <a color="white" href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life" target="_blank">
+  Read about it on Wikipedia.</a></p>
+  <canvas id="canvas" 
+  onmousedown="canvasMouseDown(event);"
+  onmousemove="canvasMouseMove(event);"
+  onmouseup="canvasMouseUp(event);"></canvas>
   <br><br>
-  <div style="display:inline-block;"><button id="pause" type="button" class="coolButton">Play</button>
-  <button id="step" type="button" class="coolButton">Next</button>
-  <button id="clear" type="button" class="coolButton">Clear</button>
-  <button id="showGrid" type="button" class="coolButton">Show Grid</button></div>
-  <div style="display:inline-block; padding-left:100px;"><img src="white-speed-256.png" alt="Game Speed">
-  <input id="speedSlider" type="range" min="1" max="25" value="4"> <p id="showSpeed"></p></div>
+  <div style="display:inline-block;">
+  <button id="pause" type="button" class="coolButton" onclick="pauseClick();">Play</button>
+  <button id="step" type="button" class="coolButton" onclick="tick();">Next</button>
+  <button id="clear" type="button" class="coolButton" onclick="clearClick();">Clear</button>
+  <button id="showGrid" type="button" class="coolButton" onclick="showGridClick();">Show Grid</button>
+  </div>
+  <div style="display:inline-block; padding-left:100px;">
+  <img src="white-speed-256.png" alt="Game Speed">
+  <input id="speedSlider" type="range" min="1" max="25" value="4" onchange="adjustSpeed();"> 
+  </div>
   <br><br> Abe Peterkin - 2016
   </body>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
   <script>
-  var canvas = $("#canvas");
-  var clearButton = $("#clear");
-  var pauseButton = $("#pause");
-  var stepButton = $("#step");
-  var speedSlider = $("#speedSlider");
-  var showSpeed = $("#showSpeed");
-  var showGridButton = $("#showGrid");
+  var canvas = document.getElementById("canvas");
+  var clearButton = document.getElementById("clear");
+  var pauseButton = document.getElementById("pause");
+  var stepButton = document.getElementById("step");
+  var speedSlider = document.getElementById("speedSlider");
+  var showGridButton = document.getElementById("showGrid");
   
   var canvasWidth = 1000;
   var canvasHeight = 600;
-  canvas.prop("height", canvasHeight);
-  canvas.prop("width", canvasWidth);
-  var ctx=canvas[0].getContext("2d");
+  canvas.height = canvasHeight;
+  canvas.width = canvasWidth;
+  var ctx=canvas.getContext("2d");
   var cellSize = 10;
   var rows = Math.ceil(canvasHeight / cellSize);
   var columns = Math.ceil(canvasWidth / cellSize);
   var grid = new Array(rows);
   var timer;
-  var interval = 1000 / speedSlider.val();
-  showSpeed.prop("html", interval + "ms");
+  var interval = 1000 / speedSlider.value;
   var paused = true;
   var drawingGridLines = false;
   var drawing = false;
@@ -49,74 +54,70 @@
   /************************* EVENT HANDLERS **********************************/
   
   // Handlers for drawing cells onto the canvas
-  canvas.on("mousedown", function() {
+  function canvasMouseDown(event) {
     drawing = true;
-    clickX = event.pageX - canvas[0].offsetLeft;
-    clickY = event.pageY - canvas[0].offsetTop;
+    clickX = event.pageX - canvas.offsetLeft;
+    clickY = event.pageY - canvas.offsetTop;
     alivenCell(Math.floor(clickY / cellSize), Math.floor(clickX / cellSize));
-  });
-  canvas.on("mousemove", function(event) {
+  }
+  
+  function canvasMouseMove(event) {
     if (drawing) {
-      clickX = event.pageX - canvas[0].offsetLeft;
-      clickY = event.pageY - canvas[0].offsetTop;
+      clickX = event.pageX - canvas.offsetLeft;
+      clickY = event.pageY - canvas.offsetTop;
       alivenCell(Math.floor(clickY / cellSize), Math.floor(clickX / cellSize));
     }
-  });
-  canvas.on("mouseup", function(event) {
+  }
+  
+  function canvasMouseUp(event) {
     drawing = false;
-  });
+  }
   
   // Handler for the 'pause' button
-  pauseButton.on("click", function() {
+  function pauseClick() {
     paused = !paused;
     if (paused) {
       clearInterval(timer);
-      pauseButton.html("Play");
+      pauseButton.innerHTML = "Play";
     } else {
       timer = setInterval(tick, interval);
-      pauseButton.html("Pause");
+      pauseButton.innerHTML = "Pause";
     }
     updateAndDraw();
-  });
+  }
   
   // Handler for the 'clear' button
-  clearButton.on("click", function() {
+  function clearClick() {
     initialize(rows, columns);
-  });
-  
-  // Handler for the 'step' button
-  stepButton.on("click", function() {
-    tick();
-  });
+  }
   
   // Handler for the 'show grid' button
-  showGridButton.on("click", function() {
+  function showGridClick() {
     drawingGridLines = !drawingGridLines;
     if (drawingGridLines) {
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
       drawGridLines();
       updateAndDraw();
-      showGridButton.html("Hide Grid");
+      showGridButton.innerHTML = "Hide Grid";
     } else {
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
       updateAndDraw();
-      showGridButton.html("Show Grid");
+      showGridButton.innerHTML = "Show Grid";
     }
-  });
+  }
   
   // Handler for the 'speed' slider
-  speedSlider.on("change", function() {
-    interval = 1000 / speedSlider.val();
-    showSpeed.prop("html", interval + "ms");
+  function adjustSpeed() {
+    interval = 1000 / speedSlider.value;
     if (!paused) {
       clearInterval(timer);
       timer = setInterval(tick, interval);
     }
-  });
+  }
   
-  /************************* FUNCTIONS ***************************************/
+  /************************* MISC FUNCTIONS ***************************************/
   
   // Switches a cell from dead to alive, and draws a black square over it.
   function alivenCell(r,c) {
